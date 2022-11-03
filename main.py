@@ -5,6 +5,9 @@ import pandas as pd
 from datasets import load_dataset
 
 def load_tokenizer():
+    """
+    Loads the german distilbert tokenizer and extends it with emoji tokens
+    """
     tokenizer = DistilBertTokenizerFast.from_pretrained('distilbert-base-german-cased')
     with open('additional_tokens', 'r') as fin:
         emojis = fin.read().split('\n')
@@ -12,6 +15,9 @@ def load_tokenizer():
     return tokenizer
         
 def load_data():
+    """
+    Loads the validation split of the german amazon reviews dataset
+    """
     dataset = load_dataset("amazon_reviews_multi", "de", split="validation")
     data = dataset.to_pandas()
     data['label'] = None
@@ -23,6 +29,9 @@ def load_data():
     return data
 
 def calculate_metric_for_label(label):
+    """
+    Calculate and print precision, recall and f1 for the given label
+    """
     ground_truth = data[data.label == label]
     predicted = data[data.prediction == label]
     correct = ground_truth[ground_truth.prediction == label]
@@ -39,6 +48,7 @@ sentiment = ['positive', 'negative', 'neutral']
 session = InferenceSession('models/distilbert.quant.onnx')
 data = load_data()
 
+# Run inference
 predictions = []
 for label, text in tqdm(data.iloc, total=len(data)):
     inp = dict(tokenizer(text, return_tensors='np'))
@@ -46,6 +56,8 @@ for label, text in tqdm(data.iloc, total=len(data)):
     predicted_sentiment = sentiment[prediction.argmax(-1)[0]]
     predictions.append(predicted_sentiment)
 
+
+# save result
 data['prediction'] = predictions
 data.to_csv('output.csv')
 
